@@ -18,7 +18,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
-app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
+app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
 toolbar = DebugToolbarExtension(app)
 
@@ -255,6 +255,15 @@ def delete_user():
 
     return redirect("/signup")
 
+@app.route("/users/likes")
+def show_likes():
+    if not g.user:
+        flash("Access unauthorized","danger")
+        return redirect("/")
+
+    likes = g.user.likes
+    return render_template("users/likes.html", likes=likes,user=g.user) 
+
 @app.route("/users/add_like/<int:message_id>", methods=["POST"])
 def add_like(message_id):
     
@@ -267,16 +276,9 @@ def add_like(message_id):
     #if the message is not the user's message and if message is not in user's likes, add like. else if message is in user's likes, remove like.
     if message.user_id != g.user.id:
         if message not in likes:
-            print("*******MESSAGE IS NOT IN LIKES*******")
-            # new_like = Likes(user_id=g.user.id,message_id=message_id)
-            # db.session.add(new_like)
-            # db.session.commit()
             likes.append(message)
             db.session.commit()
         elif message in likes: 
-            print("**********MESSAGE IS ALREADY LIKED*****************")
-            # remove_like = Likes.query.filter(message.user_id == message.id).first()
-            # db.session.delete(remove_like)
             likes.remove(message)
             db.session.commit()
     return redirect("/")

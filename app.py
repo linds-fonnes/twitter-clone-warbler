@@ -255,6 +255,32 @@ def delete_user():
 
     return redirect("/signup")
 
+@app.route("/users/add_like/<int:message_id>", methods=["POST"])
+def add_like(message_id):
+    
+    if not g.user:
+        flash("Access unauthorized", "danger")
+        return redirect("/")
+
+    message = Message.query.get_or_404(message_id)
+    likes = g.user.likes
+    #if the message is not the user's message and if message is not in user's likes, add like. else if message is in user's likes, remove like.
+    if message.user_id != g.user.id:
+        if message not in likes:
+            print("*******MESSAGE IS NOT IN LIKES*******")
+            # new_like = Likes(user_id=g.user.id,message_id=message_id)
+            # db.session.add(new_like)
+            # db.session.commit()
+            likes.append(message)
+            db.session.commit()
+        elif message in likes: 
+            print("**********MESSAGE IS ALREADY LIKED*****************")
+            # remove_like = Likes.query.filter(message.user_id == message.id).first()
+            # db.session.delete(remove_like)
+            likes.remove(message)
+            db.session.commit()
+    return redirect("/")
+
 
 ##############################################################################
 # Messages routes:
@@ -325,8 +351,8 @@ def homepage():
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
-
-        return render_template('home.html', messages=messages)
+        likes = [message.id for message in g.user.likes]
+        return render_template('home.html', messages=messages, likes=likes)
 
     else:
         return render_template('home-anon.html')

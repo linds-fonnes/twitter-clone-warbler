@@ -8,7 +8,7 @@
 import os
 from unittest import TestCase
 
-from models import db, connect_db, Message, User
+from models import db, connect_db, Message, User, Likes, Follows
 
 # BEFORE we import our app, let's set an environmental variable
 # to use a different database for tests (we need to do this
@@ -52,7 +52,7 @@ class MessageViewTestCase(TestCase):
         db.session.commit()
 
     def test_add_message(self):
-        """Can use add a message?"""
+        """Can user add a message?"""
 
         # Since we need to change the session to mimic logging in,
         # we need to use the changing-session trick:
@@ -71,3 +71,69 @@ class MessageViewTestCase(TestCase):
 
             msg = Message.query.one()
             self.assertEqual(msg.text, "Hello")
+
+    def test_delete_message(self):
+        """Can user delete a message?"""
+        m = Message(
+            id=9999,
+            text="test",
+            user_id=self.testuser.id
+        )
+        db.session.add(m)
+        db.session.commit()
+
+        with self.client as c:
+            with c.session_transaction() as session:
+                session[CURR_USER_KEY] = self.testuser.id
+            
+            resp = c.post("/messages/9999/delete",follow_redirects=True)
+            self.assertEqual(resp.status_code,200)
+            msg = Message.query.get(9999)
+            self.assertIsNone(msg)
+
+    def test_add_message_no_user(self):
+        """tests that a logged out user cannot add a message"""
+        with self.client as c:
+            resp = c.post("/messages/new", data={"text": "test"}, follow_redirects=True)
+            self.assertEqual(resp.status_code,200)
+            self.assertIn("Access unauthorized.", str(resp.data))
+
+    def test_delete_message_no_user(self):
+        """tests that a logged out user cannot delete a message"""
+        m = Message(
+            id=9999,
+            text="test",
+            user_id=self.testuser.id
+        )
+        db.session.add(m)
+        db.session.commit()
+        
+        with self.client as c:
+            resp = c.post("/messages/9999/delete",follow_redirects=True)
+            self.assertEqual(resp.status_code,200)
+            self.assertIn("Access unauthorized.", str(resp.data))
+
+    def test_add_message_invalid_user(self):
+        """tests that the logged in user cannot add a message for a different user"""
+        with self.client as c:
+            with c.session_transaction() as session:
+                session[CURR_USER_KEY] = 11111111
+        
+        resp = c.post("/messages/new", data={"text":"test"}, follow_redirects=True)
+        self.assertEqual(resp.status_code,200)
+        self.assertIn("Access unauthorized.", str(resp.data))
+        
+    def test_delete_message_invalid_user(self):
+        """tests that the logged in user cannot delete a message for a different user"""
+        m = Message(
+            id=9999,
+            text="test",
+            user_id=self.testuser.id
+        )
+        db.session.add(m)
+        db.session.commit()
+
+        with self.client as c:
+            resp = c.post("/messages/9999/delete",follow_redirects=True)
+            self.assertEqual(resp.status_code,200)
+            self.assertIn("Access unauthorized.", str(resp.data))

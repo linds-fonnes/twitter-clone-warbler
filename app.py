@@ -230,7 +230,7 @@ def profile():
             user.location = form.location.data
             user.bio = form.bio.data
             db.session.commit()
-            return redirect(f"/users/{user_id}")
+            return redirect(f"/users/{user.id}")
         else:
             form.password.errors = ["Invalid Password"]
             flash("Access unauthorized", "danger")

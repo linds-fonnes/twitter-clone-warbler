@@ -30,11 +30,13 @@ class UserViewTestCase(TestCase):
 
         #set up users and follow each other
         u1 = User(
+            id = 9999,
             email="test@test.com",
             username="testuser",
             password="HASHED_PASSWORD"
         )
         u2 = User(
+            id = 9998,
             email="test2@test.com",
             username="testuser2",
             password="HASHED_PASSWORD"
@@ -42,8 +44,8 @@ class UserViewTestCase(TestCase):
         db.session.add_all([u1,u2])
         db.session.commit()
 
-        follow = Follows(user_being_followed_id=u2.id, user_following_id=u1.id)
-        follow2 = Follows(user_being_followed_id=u1.id,user_following_id=u2.id)
+        follow = Follows(user_being_followed_id=9998, user_following_id=9999)
+        follow2 = Follows(user_being_followed_id=9999,user_following_id=9998)
         db.session.add_all([follow,follow2])
         db.session.commit()
 
@@ -52,7 +54,7 @@ class UserViewTestCase(TestCase):
             with c.session_transaction() as session:
                 session[CURR_USER_KEY] = u1.id
 
-            resp = c.get(f"/users/{u2.id}/followers")
+            resp = c.get("/users/9998/followers")
 
             self.assertEqual(resp.status_code,200)
             self.assertIn(u1.username,str(resp.data))

@@ -52,8 +52,8 @@ class UserViewTestCase(TestCase):
             with c.session_transaction() as session:
                 session[CURR_USER_KEY] = u1.id
 
-        resp = c.get(f"/users/{u2.id}/followers")
+            resp = c.get(f"/users/{u2.id}/followers")
 
-        self.assertEqual(resp.status_code,200)
-        self.assertIn(u1.username,str(resp.data))
+            self.assertEqual(resp.status_code,200)
+            self.assertIn(u1.username,str(resp.data))
 
